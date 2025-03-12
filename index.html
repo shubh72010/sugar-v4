@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Clashers</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #87CEEB, #1E90FF, #00BFFF);
+            background-size: 300% 300%;
+            animation: gradientAnimation 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        canvas {
+            width: 100vw;
+            height: 100vh;
+            display: none;
+        }
+
+        .menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        @media screen and (orientation: portrait) {
+            body {
+                transform: rotate(90deg);
+                transform-origin: center;
+                height: 100vw;
+                width: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading...</div>
+    <div class="menu" id="menu">
+        <h1>Clashers</h1>
+        <button id="start-button">Start Game</button>
+        <button id="instructions-button">Instructions</button>
+        <button id="exit-button">Exit</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="winner" style="display: none; font-size: 40px; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold;"></div>
+    <button id="reset-button" style="display: none;">Play Again</button>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const winnerText = document.getElementById("winner");
+        const menu = document.getElementById("menu");
+        const resetButton = document.getElementById("reset-button");
+
+        function resizeCanvas() {
+            if (window.innerWidth > window.innerHeight) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            } else {
+                canvas.width = window.innerHeight;
+                canvas.height = window.innerWidth;
+            }
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        class Player {
+            constructor(x, y, color, name) {
+                this.x = x;
+                this.y = y;
+                this.width = 50;
+                this.height = 50;
+                this.color = color;
+                this.velocity = { x: 0, y: 0 };
+                this.speed = 5;
+                this.gravity = 0.5;
+                this.jumpPower = -10;
+                this.onGround = false;
+                this.health = 100;
+                this.name = name;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillStyle = "black";
+                ctx.fillRect(this.x, this.y - 15, 50, 5);
+                ctx.fillStyle = "green";
+                ctx.fillRect(this.x, this.y - 15, this.health * 0.5, 5);
+            }
+            update() {
+                this.velocity.y += this.gravity;
+                this.y += this.velocity.y;
+                if (this.y + this.height >= canvas.height - 100) {
+                    this.y = canvas.height - 100 - this.height;
+                    this.velocity.y = 0;
+                    this.onGround = true;
+                } else {
+                    this.onGround = false;
+                }
+                this.x += this.velocity.x;
+                this.x = Math.max(0, Math.min(canvas.width - this.width, this.x));
+                this.draw();
+            }
+            attack(opponent) {
+                if (
+                    this.x + this.width >= opponent.x &&
+                    this.x <= opponent.x + opponent.width &&
+                    this.y + this.height >= opponent.y &&
+                    this.y <= opponent.y + opponent.height
+                ) {
+                    opponent.health -= 10;
+                    if (opponent.health <= 0) {
+                        this.displayWinner();
+                    }
+                }
+            }
+            displayWinner() {
+                winnerText.innerText = `${this.name} Wins!`;
+                winnerText.style.display = "block";
+                canvas.style.display = "none";
+                resetButton.style.display = "block";
+            }
+        }
+
+        let player1, player2;
+
+        function createPlayers() {
+            player1 = new Player(100, 500, "red", "Player 1");
+            player2 = new Player(400, 500, "blue", "Player 2");
+        }
+
+        document.getElementById("start-button").addEventListener("click", () => {
+            createPlayers();
+            menu.style.display = "none";
+            canvas.style.display = "block";
+        });
+    </script>
+</body>
+</html>
